@@ -13,6 +13,40 @@
 ## Process
 ### 1. Create a NodeJS App
 
+1. Create a root directory called _simple-web-app_ and then change directories to the newly created folder.
+```s
+mkdir simple-web-app
+cd simple-web-app
+```
+
+2. Once inside the root directory we need to initate an node project and creating a file called _package.json_ which will host our app configuraiton. 
+
+```s
+npm init -y 
+```
+
+3. A file called `package.json` will have been created. We are going to now add 2 dependencies to our _package.json_ config file for our _simple-web-app_ to run. Those will be `nodemon` and `express`. To do this execute the following command: 
+
+```s
+npm i express nodemon --save
+```
+
+4. Now we need to create an index.js file which will be the main program of our application. In it we will bring in our `express` package. We will use the express package in a variable called app to do 2 things: 1. create a route & 2. create a port for the app to listen for incoming requests. 
+
+```s
+const express = require('express')
+const app = express() 
+const PORT = 3000 || process.env.PORT
+
+app.get('/', (req, res) => {
+    res.send('Hi there')
+})
+
+app.listen(PORT, ()=> {
+    console.log(`Server is up and listening on port ${PORT}`)
+})
+```
+
 ### 2. Create a Dockerfile
 1. In the root directory create a file called `Dockerfile` with no extension
 ```s
