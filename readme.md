@@ -1,5 +1,5 @@
-# Docker and Kubernetes
+# Section 7: Continous Integration and Deployment with AWS 
 
-## Docker 
+## Objectives
 
-## Kubernetes
+## Steps
