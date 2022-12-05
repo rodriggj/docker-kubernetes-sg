@@ -65,3 +65,19 @@ github add .
 github commit -am 'adding travis.yml file'
 git push -u origin master
 ```
+
+> NOTE: You have to eliminate any nesting of folders. The .git command needs to be in the root directory or travis will not pick up on the commit. I flattened the entire directory structure removing the `front-end` parent dir to ensure that the `sect_07` branch will get read by travis. 
+
+7. Upon pushing the changes to _Github_, _Travis CI_ recognizes the push via a webhook and begins the build process. 
+
+<p align="center">
+<img width="350" src="https://user-images.githubusercontent.com/8760590/205583564-c8c4a704-60ee-468b-b680-be2bbf4ab591.png"/>
+</p>
+
+And the console log within _Travis CI_ details that the tests passed, which is what we input to the `.travis.yml` file instructions. 
+
+<p align="center">
+<img width="350" src="https://user-images.githubusercontent.com/8760590/205583787-1aa03e01-392f-4e7b-b5fb-33b4b802fb5f.png"/>
+</p>
+
+8.
