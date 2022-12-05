@@ -1,0 +1,11 @@
+sudo: required
+language: generic 
+
+services: 
+  - docker
+
+before_install: 
+  - docker build -t rodriggj/reactapp:v1 -f Dockerfile.dev .
+
+script:
+  - docker run -e CI=true rodriggj/reactapp:v1 npm run test -- --coverage
