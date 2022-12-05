@@ -80,4 +80,65 @@ And the console log within _Travis CI_ details that the tests passed, which is w
 <img width="350" src="https://user-images.githubusercontent.com/8760590/205583787-1aa03e01-392f-4e7b-b5fb-33b4b802fb5f.png"/>
 </p>
 
-8.
+## Incorporate AWS Host to our Pipeline
+
+1. When creating our Elastic Beanstalk environment in the next lecture, we need to select Docker running on 64bit Amazon Linux 2 and make a few changes to our project:
+
+As of Aug '21 the AWS platform will conflict with the project we have built since it will look for a `docker.compose.yml` file to build from by default instead of a `Dockerfile`.
+
+To resolve this, please do the following:
+
+1. Rename the development Compose config file
+
+Rename the `docker-compose.yml` file to `docker-compose-dev.yml`. Going forward you will need to pass a flag to specify which compose file you want to build and run from:
+
+```s
+docker-compose -f docker-compose-dev.yml up
+docker-compose -f docker-compose-dev.yml up --build
+docker-compose -f docker-compose-dev.yml down
+```
+
+2. Create a production Compose config file
+
+Create a `docker-compose.yml` file in the root of the project and paste the following:
+
+```yaml
+version: '3'
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '80:80'
+```
+
+AWS EBS will see a file named `docker-compose.yml` and use it to build the single container application.
+
+3. Navigate to the `AWS Console`. And search for the `Elastic Beanstalk` service. Click `Create Web App`. Now we need to configure our app. 
++ Name: reactapp
++ Platform: Docker
++ Platform branch: Docker running on 64bit Amazon Linux 2
++ Platform version: 3.5.1 (Recommended)
++ Application code: sample application
++ Click `Create Application`
+
+4. Elastich Beanstalk will take a while to build out the environment (~5 mins). When the build is successfully you will be redirected to a screen that looks like this: 
+
+<p align="center">
+<img width="350" src="https://user-images.githubusercontent.com/8760590/205662020-f3f26cc6-c88b-49b8-b71d-bd79ce5e85b4.png"/>
+</p>
+
+You can see in this image there is a URL that will route to the hosted application. In this case, the EBS service will display the default application for a Docker container b/c we choose the option `Sample application` in our config. 
+
+<p align="center">
+<img width="350" src="https://user-images.githubusercontent.com/8760590/205662449-ca21a174-d361-4d50-9c94-8b9c6fb11c15.png"/>
+</p>
+
+We obviously will modify this to add our own application, but for now it demonstrates that our config files for the Docker build process work. We will update the application later. 
+
+Why do we use EBS at all for this step? Because EBS, among other things, will handle horizontal scaling for our application. You can conceptutually think of the EBS construct like this: 
+
+<p align="center">
+<img width="350" src="https://user-images.githubusercontent.com/8760590/205664595-4e6b9fba-d3c7-47dc-b26d-5991eca74a15.png"/>
+</p>
