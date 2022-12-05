@@ -156,6 +156,39 @@ So let's update our view diagram and see what we have to deal with now.
 <img width="350" src="https://user-images.githubusercontent.com/8760590/205523485-c049f626-92de-4065-9861-5f6cc69f4f38.png"/>
 </p>
 
-We resolved creating the containers... but we still haven't connected them. 
+3. We resolved creating the containers... but we still haven't connected them. To connect them we have 2 choices: 
+1. We can continue to use the `docker` cli to connect the containers (cumbersome and not used in production) 
+2. We can use `docker-compose` cli to connect them for us (more often used in real-world)
+
+We will use `docker-compose` option. To execute this option we need to create a `docker-compose.yml` file and configure the file to create both the docker containers and by default we will get a communication bridge between the 2 containers for "free". 
+
+4. Create a file called `docker-compose.yml` in the root directory of our visits application
+
+```s
+code docker-compose.yml
+```
+
+5. When the file opens in the IDE enter the following config, and save the file.
+
+```s
+version: '3'
+services: 
+  redis-server:
+    image: 'redis'
+  node-app: 
+    build: .
+    ports: 
+      - "5005:5005"
+```
+
+6. Now note that aside from the ports node, we haven't specified any networking between these 2 services... so how will they network together? Explanation 
+
+1. The services created on this `docker-compose.yml` file will refer to each other by name -- so docker-compose will handle a reference to "redis-server" and to "node-app" in the appropriate context. 
+2. We have to modify our `visits` application, index.js file to make a reference to the needed connection the redis container. To do this open the `index.js` file and make the followin _createClient()_ modifications: 
+
+```s
+
+
+```
 
 
