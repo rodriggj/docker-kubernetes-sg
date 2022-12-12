@@ -80,7 +80,7 @@ And the console log within _Travis CI_ details that the tests passed, which is w
 <img width="350" src="https://user-images.githubusercontent.com/8760590/205583787-1aa03e01-392f-4e7b-b5fb-33b4b802fb5f.png"/>
 </p>
 
-## Incorporate AWS Host to our Pipeline
+## Incorporate AWS Elastic Bean Stalk (EBS) into our Pipeline
 
 1. When creating our Elastic Beanstalk environment in the next lecture, we need to select Docker running on 64bit Amazon Linux 2 and make a few changes to our project:
 
@@ -142,3 +142,61 @@ Why do we use EBS at all for this step? Because EBS, among other things, will ha
 <p align="center">
 <img width="350" src="https://user-images.githubusercontent.com/8760590/205664595-4e6b9fba-d3c7-47dc-b26d-5991eca74a15.png"/>
 </p>
+
+## Deploy App to EBS via Travis
+
+Now that we have Travis CI polling Github and creating a deployment each time we push a commit, we want to know configure Travis CI to push to EBS and deploy our application on AWS when tests pass. 
+
+To do this we have changes to our `travis.yml` file to make. 
+
+1. Opent hte `.travis.yml` file and add to the bottom of the script the following config:
+
+```yaml
+deploy: 
+  provider: elasticbeanstalk
+  region: "us-west-2"
+  app: "reactapp"
+  env: "Reactapp-env"
+  bucket-name: "elasticbeanstalk-us-west-2-102305463663"
+  bucket-path: "reactapp"
+  on: 
+    branch: master
+```
+
+2. The config to deploy the app is now captured in the .yaml file, but we will have to also pass keys to authenticate on our behalf. To do this we need to first create a new user. To do this navigate to the `IAM` service on the AWS Console. 
+
++ Click `Users`
++ Name: `reactapp-travis-ci`
++ Access Type: `programmatic access`
++ Click _Next_ to navigate to the Permissions
++ Click _Attach existing policies directly_
++ In the _Search Bar_ enter `beanstalk`
++ The search results will reveal multiple policies, select the one for `Full Access` to EBS
++ Click _Review_
++ Click _Create User_
+
+> This process will now generate a Public and Secret Key. **These keys will only be presented 1x** so you must download the keys to a safe location or you will have to repeat this process and create new keys. 
+
+3. The Secret Key provides access to your AWS profile which you do not want to make public. So you cannot add these public and secret keys to your .yaml file and push to github. Instead we want to make these secure by using them as environment variables managed by Travis CI. To do this 
+
++ On Travis CI Dashboard for your project click the _More Options_/_Settings_ on the UI. 
++ Scroll down on the UI till you see the section labeled _Environment Variables_
++ Name the Public and Secret Keys in the env var section and add to Travis CI. 
+
+4. Now enter the _env vars_ in the .yaml file. 
+
+```yaml
+deploy: 
+  provider: elasticbeanstalk
+  region: "us-west-2"
+  app: "reactapp"
+  env: "Reactapp-env"
+  bucket-name: "elasticbeanstalk-us-west-2-102305463663"
+  bucket-path: "reactapp"
+  on: 
+    branch: master
+  access_key_id: "$aws_access_key_id"
+  secret_access_key: "$aws_secret_access_key"
+```
+
+5. Now the config is complete. We can now commit the code to the appropriate branch and merge with master. Becasue of our `on: branch: master` config, when we merge our commit with master Travis CI should init a build and push our reactapp to the Elastic Beanstalk Cluster. 
