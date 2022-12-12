@@ -15,7 +15,7 @@ deploy:
   region: "us-west-2"
   app: "reactapp"
   env: "Reactapp-env"
-  bucket-name: "elasticbeanstalk-us-west-2-102305463663"
+  bucket-name: "elasticbeanstalk-us-west-2-102305463663/.elasticbeanstalk"
   bucket-path: "reactapp"
   on: 
     branch: master
