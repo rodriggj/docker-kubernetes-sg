@@ -236,3 +236,5 @@ COPY --from=builder /app/build /usr/share/nginx/html
 ```
 
 > NOTE: The Expose Keyword is specfic to the fact that we are using ElasticBeanstalk. You don't need to do this if you are not using ElasticBeanstalk for your deployment. 
+
+-------
