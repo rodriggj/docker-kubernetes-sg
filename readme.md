@@ -200,3 +200,39 @@ deploy:
 ```
 
 5. Now the config is complete. We can now commit the code to the appropriate branch and merge with master. Becasue of our `on: branch: master` config, when we merge our commit with master Travis CI should init a build and push our reactapp to the Elastic Beanstalk Cluster. 
+
+When you merge the commit to master you should see travis recognizing the build request and initiating the build 
+
+<p align="center">
+<img width="350" src="https://user-images.githubusercontent.com/8760590/206937135-3cafe680-728a-4175-b32b-722d949e42db.png"/>
+</p>
+
+The Travis CI tooling will demonstrate logs back to the user and you will have to resolve any troubleshooting errors. If success full you will see a display similar to the following: 
+
+<p align="center">
+<img width="350" src="https://user-images.githubusercontent.com/8760590/206937135-3cafe680-728a-4175-b32b-722d949e42db.png"/>
+</p>
+
+6. Even though the build completed. You don't have any access to the container. This is because we need to execute some port binding. In the docker file input the `EXPOSE` keyword and specify PORT 80. 
+
+```s
+# Build Phase
+# Base Image 
+FROM node:16-alpine as builder
+
+# Create working directory
+WORKDIR /app
+
+# Run some commands
+COPY ./package.json .
+RUN npm install
+COPY . . 
+RUN npm run build
+
+# Run Phase
+FROM nginx
+EXPOSE 80
+COPY --from=builder /app/build /usr/share/nginx/html
+```
+
+> NOTE: The Expose Keyword is specfic to the fact that we are using ElasticBeanstalk. You don't need to do this if you are not using ElasticBeanstalk for your deployment. 
