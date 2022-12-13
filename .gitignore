@@ -1,0 +1,7 @@
+complex/worker/node_modules
+./complex/worker/node_modules
+
+complex/server/node_modules
+./complex/server/node_modules
+
+*/node_modules
