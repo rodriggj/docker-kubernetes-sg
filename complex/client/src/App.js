@@ -1,7 +1,7 @@
 import logo from './logo.svg';
-import { BrowserRouter as Router, Route, Link } from 'react-router-dom'
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom'
 import Fib from './Fib';
-import OtherPage from './OtehrPage'
+import OtherPage from './OtherPage'
 import './App.css';
 
 function App() {
@@ -15,12 +15,13 @@ function App() {
           <Link to="/otherpage">Other Page</Link>
         </header>
         <div>
-          <Route exact path="/" component={Fib} />
-          <Route exact path="/otherpage" component={OtherPage} />
+          <Routes>
+            <Route exact path="/" component={Fib} />
+            <Route exact path="/otherpage" component={OtherPage} />
+          </Routes>
         </div>
       </div>
     </Router>
-
   );
 }
 
