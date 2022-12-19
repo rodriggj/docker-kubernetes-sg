@@ -125,4 +125,177 @@ docker build -t rodriggj/server:v1 -f Dockerfile.dev .
 docker run rodriggj/server:v1
 ```
 
+## Writing our Docker Compose file
+
+When we write our `Docker Compose` file to help execute our Docker run tasks & establish a network upon which these containers can communicate with each other, we will have to consider the following within the Docker Compose file. 
+
+<p align="center">
+<img width="350" alt="image" src="https://user-images.githubusercontent.com/8760590/208468802-502edae6-3cc0-47dd-8849-f81f77a13c19.png">
+</p>
+
+1. Inside of the root project directory you want to create a `Docker Compose` file. 
+
+```s
+code docker-compose.yml
+```
+
+2. Begin to construct the `docker-compose.yml` file as follows: 
+
+```yml
+# Use postgres/example user/password credentials
+version: '3.1'
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: example
+```
+
+> **NOTE:** Postgres image documentation is [here](https://hub.docker.com/_/postgres)
+
+If we test this config we can run 
+```s
+docker compose up 
+```
+And you'll see that the postgres service has been initialized and ready to accept connections. 
+
+3. We can now repeat the process for adding `redis` to our docker-compose file. 
+
+```s
+version: '3.1'
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: example
+  redis: 
+    image: redis:latest
+```
+
+Again if we want to test the config we can once again run `docker compose up` and validate that both the postgres service and now the ready service are ready to accept connections. 
+
+4. Next we need to add our server config to the docker compose file. To do this we will add both a `build/context` and a `volume` so we can store files and interact with files from our local env to our container. To do this we will first add: 
+
+```yaml
+version: '3.1'
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: example
+  redis: 
+    image: redis:latest
+  server: 
+    build: 
+      dockerfile: Dockerfile.dev
+      context: ./server
+```
+
+> **NOTE:** Here what we are doing is using the `build` node to specify 2 things: 1. the dockerfile we want to build our image from which is specified in the `dockerfile` node. 2. We need to specify the build context, aka the path to the folder we are referencing to house the dockerfile which in this case is the server directory. 
+
+5. Next we need to add our volumes so we can make changes to the files hosted on the server and to store files. For this we enter: 
+```yml 
+version: '3.1'
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: example
+  redis: 
+    image: redis:latest
+  server: 
+    build: 
+      dockerfile: Dockerfile.dev
+      context: ./server
+    volumes: 
+      - /app/node_modules
+      - ./server:/app
+```
+
+> **NOTE:** Here we are specifying a volume with the `volume` node. Then we give the first arg in the array ('-') a folder to **NOT** Overwrite that is the `/app/node_modules` folder. Recall that we specified `/app` as our `WORKDIR` so when files get placed in this `/app/node_modules` folder at container build time, we want to **NOT** override this folder. Then we specify the _from_:_to_ directories we want to map our local storage to our container storage. We do so with a ":" notation in between 2 file paths. The first is where are the files coming from, in this case the root directory of `server` and we want them to map to our `WORKDIR` which happens to be `app` on our container. 
+
+6. Now we need to specify the environment variables for our redis & postgres services. To do this we need to enter the following: 
+
+```yaml 
+version: '3'
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: example
+  redis: 
+    image: redis:latest
+  server: 
+    build: 
+      dockerfile: Dockerfile.dev
+      context: ./server
+    volumes: 
+      - /app/node_modules
+      - ./server:/app
+    environment:  
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PGUSER=postgres
+      - PGHOST=postgres
+      - PGDATABASE=postgres
+      - PGPASSWORD=POSTGRES_PASSWORD
+      - PGPORT=5432
+```
+
+7. So now we have the postgres, redis, and server components all working together. Our final components of our build are the react client application as well as the Worker. To add this, enter the following in our .yml file. 
+
+```yml
+client: 
+  build: 
+    dockerfile: Dockerfile.dev
+    context: ./client
+  volumes: 
+    - ./app/node_modules
+    - ./client:/app
+worker:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./worker
+    volumes:
+      - /app/node_modules
+      - ./worker:/app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+```
+
+## Nginx Container 
+
+Recall we said that this would be our application architecture 
+
+<p align="center">
+<img width="350" alt="image" src="https://user-images.githubusercontent.com/8760590/208481350-b1d6acce-da08-40d1-8d49-5b4c7f9a28be.png">
+</p>
+
+But we didn't account for our NGINX server. Where is this and why do we need it? 
+
+Recall that we have 2 different types of routes within our architecture. There are some that follow a '/' nomenclature found in our `React` appliction, and there are some that will route to our `Express` application and the NGINX server will act as our load balancer directing traffic to the appropriate source.
+
+<p align="center">
+<img width="350" alt="image" src="https://user-images.githubusercontent.com/8760590/208482996-365da966-5fec-4568-ab09-4d9bc3d0d5e8.png">
+</p>
+
+To do this we will build a default.conf file for the nginx server that will manage the following: 
+
+<p align="center">
+<img width="350" alt="image" src="https://user-images.githubusercontent.com/8760590/208484179-6d5b648e-789e-4605-b824-2315b1dca8cd.png">
+</p>
+
+
+
 ## Reference
