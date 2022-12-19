@@ -32,23 +32,4 @@ docker build -f Dockerfile.dev .
 
 > NOTE: Make sure your Docker Desktop client is running to enable communication to the Docker Dameon. 
 
-You should see a terminal display similar to the following 
-
-<p align="center">
-<img width="350" src="https://user-images.githubusercontent.com/8760590/207473370-0c2453fe-b748-4c53-8f32-21bb8b287f49.png">
-</p>
-
-5. Now utilize the Docker image id to run the container. 
-
-```s
-docker run sha256:541f4de7fd66d8c00c04d7246a3385e56c7e30900f92069983cad397e3ce310b
-```
-
-Should result in a display like this: 
-
-<p align="center">
-<img width="350" src="https://user-images.githubusercontent.com/8760590/207473539-7b2300df-865e-407f-9787-185e4d5b0c87.png">
-</p>
-
-
 ## References
