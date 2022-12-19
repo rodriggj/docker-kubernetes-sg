@@ -240,6 +240,43 @@ const redisPublisher = redisClient.duplicate()
 8. Now we need to create some routes for the express application to route requests to and apply the appropriate logic in the application. 
 
 ```js
+// Configure Express Route Hanlders
+app.get('/', (req, res) => {
+    res.send('Hello from inside the Express App.')
+})
 
+app.get('/values/all', async (req, res) => {
+    const values = await pgClient.query('SELECT * FROM values')
+
+    res.send(values.rows)
+})
+
+app.get('/values/current', async (req, res) => {
+    redisClient.hGetAll('values', (err, values) => {
+        res.send(values)
+    })
+})
+
+app.post('/values', async(req, res) => {
+    const index = req.body.value
+    
+    if(parseInt(index) > 40) {
+        return res.status(422).send('Index is too high.')
+    }
+    
+    redisClient.hSet('values', index, 'Nothing yet...')
+    redisPublisher.publish('insert', index)
+
+    pgClient.query('INSERT INTO values(number) VALUES($1)', [index])
+
+    res.send({working: true})
+})
+
+app.listen(5001, (err) => {
+    if(!err){
+        console.log('Server is up and listening on port 5000')
+    }
+    console.log(err)
+})
 ```
 ## References
