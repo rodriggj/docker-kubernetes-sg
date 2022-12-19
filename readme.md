@@ -1,284 +1,128 @@
-# Section 8 - Building a Multi-container Application
+# Section 9 - Dockerizing a multi-container app
 
 ## Objective
 
-The application we will be building is very simple but we are overcomplicating the architecture to include: 
-- [ ] nginx server
-- [ ] react & express servers
-- [ ] redis 
-- [ ] & postgres
-
-This is purposely over complicated for the sake of demonstrating multiple containers working with each other. This archicture can absolutely be simplified, but again the point is to get an operational applciation and emphasize the use of mulitple containers interacting. 
-
-The architecture will effectively be the following: 
-
-### Development Flow
-
-<p align="center">
-<img width="350" src="https://user-images.githubusercontent.com/8760590/207156578-195c6977-f97e-40e0-9a2c-eeed0b9ac761.png">
-</p>
-
-1. The nginx server will serve as a "router" that will execute traffic routing either to the Front-End (React application) if the application is requesting an html or css file, but will route to the Express Server if just requesting data from our API.
-
-2. Depending on the data that we are trying to retrieve from the backend (either a calculation, or simply a cache value) we will make an appropriate call to postgres or redis. 
-
-The data flow will look something like this: 
-
-<p align="center">
-<img width="350" src="https://user-images.githubusercontent.com/8760590/207158401-1a6f945e-5028-46f7-b96f-75d186277578.png">
-</p>
-
 ## Steps
 
-### `Worker` Setup
+### Containerizing the `client` application
 
-1. First create a directory called `complex` to house our new _complex_ application an its associated parts. 
+1. In Section 8, we created a directory structure complete with the appropriate files to build a React Application that will perform fibinocci calculations. The application will utilize a _Redis_, _Postgres_, _Express_, and _React_ architecture, and we will now `dockerize` these various components. 
 
-```s
-mkdir complex 
-cd complex
-```
-
-2. In the root directory, create a sub-directory called `worker` 
+2. We will begin by creating a `Dockerfile.dev` file inside of our `client` directory that will be used to init the containerization of our React Client.
 
 ```s
-mkdir worker
-cd worker
+cd ~/complex/client
+code Dockerfile.dev
 ```
 
-3. Add a package.json file or simply create using `npm init`
+3. Input the following code into the `Dockerfile.dev` file. 
 
 ```s
-npm init -y
+FROM node:16-alpine
+WORKDIR '/app'
+COPY ./package.json ./
+RUN npm i --save
+COPY . .
+CMD ["npm", "run", "start"]
 ```
 
-4. Install 2 dependencies 1. _redis client_ & 2. _nodemon_
+4. Navigate to our `/complex/client` directory and execute a `docker build` command on the file `Dockerfile.dev`. 
 
 ```s
-npm i redis nodemon --save
+cd ~/complex/client
+docker build -f Dockerfile.dev .
 ```
 
-5. Open the package.json file and ensure there are 2 scripts in the file 1. _start_ & 2. _dev_
+> NOTE: Make sure your Docker Desktop client is running to enable communication to the Docker Dameon. 
 
-```json
-{
-  "name": "worker",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "nodemon": "^2.0.20",
-    "redis": "^4.5.1"
-  }
-}
-```
+You should see a terminal display similar to the following 
 
-6. Create a source file for our fib calculations in `index.js`
+<p align="center">
+<img width="350" src="https://user-images.githubusercontent.com/8760590/207473370-0c2453fe-b748-4c53-8f32-21bb8b287f49.png">
+</p>
+
+5. Now utilize the Docker image id to run the container. 
 
 ```s
-code index.js
+docker run sha256:541f4de7fd66d8c00c04d7246a3385e56c7e30900f92069983cad397e3ce310b
 ```
 
-7. Also create a `keys.js` file which is where we will export our redis connection configuration. 
+Should result in a display like this: 
+
+<p align="center">
+<img width="350" src="https://user-images.githubusercontent.com/8760590/207473539-7b2300df-865e-407f-9787-185e4d5b0c87.png">
+</p>
+
+### Containerizng the `server` application
+
+1. Change directory to the `server` dir and build another docker file 
 
 ```s
-code keys.js
+code Dockerfile.dev
 ```
 
-8. On the `keys.js` file enter the following to export our variables that will house our PORT and HOST configuration to our Redis instance
-
-```js
-module.exports = {
-    redisHost: process.env.REDIS_HOST,
-    redisPort: process.env.REDIS_PORT
-}
-```
-
-9. Now go over to the `index.js` file an input the following: 
-
-```js
-const keys = require('./keys');
-const redis = require('redis');
-
-const redisClient = redis.createClient({
-  host: keys.redisHost,
-  port: keys.redisPort,
-  retry_strategy: () => 1000,
-});
-const sub = redisClient.duplicate();
-
-function fib(index) {
-  if (index < 2) return 1;
-  return fib(index - 1) + fib(index - 2);
-}
-
-sub.on('message', (channel, message) => {
-  redisClient.hset('values', message, fib(parseInt(message)));
-});
-sub.subscribe('insert');
-```
-
--------
-
-### The `Express Server` setup
-
-1. Make a parent directory for the express server that is at the same hierarchy level as the `worker` directory. Name this directory `server`. 
+2. Enter the following in the docker file 
 
 ```s
-cd ~/complex
-mkdir server
-cd server
+FROM node:14.14.0-alpine
+
+WORKDIR "/app"
+
+COPY ./package.json ./
+
+RUN npm i --save
+
+COPY . . 
+
+CMD ["npm", "run", "dev"]
 ```
 
-2. Again run the npm init program, which will create a package.json and node_modules folder. 
+3. Build an image out of this Dockerfile
 
 ```s
-npm init -y
+docker build -t rodriggj/server:v1 -f Dockerfile.dev .
 ```
 
-3. Install dependencies for 1. cors, 2. express, 3. pg 4. nodemon 5. redis  
+4. Run the image
 
 ```s
-npm i nodemon express cors pg redis --save
+docker run rodriggj/server:v1
 ```
 
-4. Add the start and dev scripts to the package.json file. 
+### Containerizing the `worker` application
 
-```json
-{
-  "name": "server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "nodemon": "^2.0.20",
-    "pg": "^8.8.0",
-    "redis": "^4.5.1"
-  }
-}
-```
-
-5. Create a `keys.js` file to house all our connection variables, and input the following code into the `keys.js` file.
+1. Change directory to the `server` dir and build another docker file 
 
 ```s
-code keys.js
+code Dockerfile.dev
 ```
 
-```js
-module.exports = { 
-    redisHost: process.env.REDIS_HOST, 
-    redisPort: process.env.REDIS_PORT, 
-    pgUser: process.env.PGUSER, 
-    pgHost: process.env.PGHOST,
-    pgDatabase: process.env.PGDATABASE,
-    pgPassword: process.env.PGPASSWORD,
-    pgPort: process.env.PGPORT
-}
-```
-
-6. Now we need to configure the `express` app that will communicate with _Redis_, _Postgres_, & the _React_ servers. First we will start with the required config to connect to our Postgres instance and store the values that have been submitted. 
+2. Enter the following in the docker file 
 
 ```s
-code index.js
+FROM node:14.14.0-alpine
+
+WORKDIR "/app"
+
+COPY ./package.json ./
+
+RUN npm i --save
+
+COPY . . 
+
+CMD ["npm", "run", "dev"]
 ```
 
-```js
-const bodyParser = require('body-parser')
-const cors = require('cors')
+3. Build an image out of this Dockerfile
 
-const app = express()
-app.use(cors())
-app.use(bodyParser.json())
-
-// Postgres Client Setup
-const { Pool } = require('pg')
-const pgClient = new Pool ({
-    user: keys.pgHost,
-    host: keys.pgHost, 
-    database: keys.pgDatabase,
-    password: keys.pgPassword,
-    port: keys.pgPort
-})
-
-pgClient.on("connect", (client) => {
-    client
-      .query("CREATE TABLE IF NOT EXISTS values (number INT)")
-      .catch((err) => console.error(err));
-  });
+```s
+docker build -t rodriggj/server:v1 -f Dockerfile.dev .
 ```
 
-7. Now we can continue to modify the `index.js` code to connect to the _Redis_ instance. Recall that the _Redis_ db is a cache, that will temporarily store the values submitted and pass these to the worker node to calculate the fib values. The _Redis_ store will then store the calculated fib values for the _Express_ server to return to the React application. 
+4. Run the image
 
-```js
-// Redis Client Setup
-const redis = require('redis')
-const redisClient = redis.createClient({
-    host: keys.redisHost,
-    port: keys.redisPort, 
-    retry_strategy: () => 1000
-})
-
-const redisPublisher = redisClient.duplicate()
+```s
+docker run rodriggj/server:v1
 ```
 
-8. Now we need to create some routes for the express application to route requests to and apply the appropriate logic in the application. 
-
-```js
-// Configure Express Route Hanlders
-app.get('/', (req, res) => {
-    res.send('Hello from inside the Express App.')
-})
-
-app.get('/values/all', async (req, res) => {
-    const values = await pgClient.query('SELECT * FROM values')
-
-    res.send(values.rows)
-})
-
-app.get('/values/current', async (req, res) => {
-    redisClient.hGetAll('values', (err, values) => {
-        res.send(values)
-    })
-})
-
-app.post('/values', async(req, res) => {
-    const index = req.body.value
-    
-    if(parseInt(index) > 40) {
-        return res.status(422).send('Index is too high.')
-    }
-    
-    redisClient.hSet('values', index, 'Nothing yet...')
-    redisPublisher.publish('insert', index)
-
-    pgClient.query('INSERT INTO values(number) VALUES($1)', [index])
-
-    res.send({working: true})
-})
-
-app.listen(5001, (err) => {
-    if(!err){
-        console.log('Server is up and listening on port 5000')
-    }
-    console.log(err)
-})
-```
-
-This is a test 
-## References
+## Reference
