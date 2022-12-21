@@ -296,6 +296,86 @@ To do this we will build a default.conf file for the nginx server that will mana
 <img width="350" alt="image" src="https://user-images.githubusercontent.com/8760590/208484179-6d5b648e-789e-4605-b824-2315b1dca8cd.png">
 </p>
 
+1. Create a dir called 'nginx'
+
+```s
+mkdir nginx
+```
+
+2. In the nginx folder create a file called 'default.conf'
+```s
+code default.conf
+```
+
+3. We will begin by creating our 'upstream' client calls. In the 'default.conf' file enter the following code: 
+
+```s
+upstream client {
+  server client: 3000;
+}
+
+upstream api {
+  server api: 50001
+}
+```
+
+> **NOTE:** The syntax above is a nginx specific syntax that can be found in documentation sets [here](http://nginx.org/en/docs/http/ngx_http_upstream_module.html). Here we are using an upstream 'directive' and naming the upstream asset 'client'. We've then specified to the nginx engine that the upstream 'client' is listening on port 3000. 
+
+> **NOTE:** Because our second service 'api' is really referring to our 'server' service captured in our docker compose file, we'll change the docker-compose file to instead use the name 'api' vs 'server'. 
+
+<p align="center">
+<img width="350" alt="image" src="https://user-images.githubusercontent.com/8760590/208928345-d575b22e-9369-4e47-b250-99bbf2df316a.png">
+</p>
+
+3. Now in our 'default.conf' file we will set up our nginx server with a code block that will listen on port 80, and redirect traffic to our '/' (react server) or '/api' (express server). 
+
+```s
+upstream client {
+  server client: 3000;
+}
+
+upstream api {
+  server api: 50001;
+}
+
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://client; 
+    }
+
+    location /api {
+        proxy_pass http://api;
+    }
+}
+```
+
+4. Now the last piece of config in our 'default.conf' file will be to ensure that when a route comes in with '/api' that nginx drops this prefix and simply routes to the remainder of the route path. For example... when a route hits '/api/values' we don't want to pass '/api' prefix to the express server we simply want to pass '/values'. So to drop this prefix we need to add this last piece of configuration. 
+
+```s
+upstream client {
+  server client: 3000;
+}
+
+upstream api {
+  server api: 50001;
+}
+
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://client; 
+    }
+
+    location /api {
+        rewrite /api/(.*) /$1 break; 
+        proxy_pass http://api;
+    }
+}
+```
+
 
 
 ## Reference
